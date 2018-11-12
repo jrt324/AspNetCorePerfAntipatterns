@@ -24,7 +24,7 @@ namespace LOHAllocations.Controllers
 
         // GET api/image/slow
         [HttpGet("slow")]
-        public async Task<ActionResult<string>> GetImageSlowAsync()
+        public async Task<ActionResult<int>> GetImageSlowAsync()
         {
             using (var client = _httpClientFactory.CreateClient())
             {
@@ -35,13 +35,13 @@ namespace LOHAllocations.Controllers
                 // will lead to frequent gen 2 GCs and poor performance. These objects
                 // should be pooled or cached.
                 var imageBytes = await response.Content.ReadAsByteArrayAsync();
-                return Ok($"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}");
+                return Ok(imageBytes[imageBytes.Length - 1]);
             }
         }
 
         // GET api/image/slow
         [HttpGet("fast")]
-        public async Task<ActionResult<string>> GetImageFastAsync()
+        public async Task<ActionResult<int>> GetImageFastAsync()
         {
             // Ideally the large object would be cached to avoid both the GC pressure 
             // and the http call. Assuming that isn't an option, though, ArrayPools
@@ -60,13 +60,7 @@ namespace LOHAllocations.Controllers
                             await responseStream.CopyToAsync(ms);
                         }
 
-                        // This will still allocate a large string. Without changing the API to
-                        // return bytes directly or implementing our own stream-based base64 encoding
-                        // (both of which might be worth considering in a real, production app),
-                        // this is difficult to avoid.
-                        // This sample will still demonstrate the difference between allocating both 
-                        // the byte[] and the string and just the string[], though.
-                        return Ok($"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes, 0, (int)responseStream.Length)}");
+                        return Ok(imageBytes[responseStream.Length - 1]);
                     }
                     finally
                     {
