@@ -41,6 +41,9 @@ namespace BlockingCalls.Controllers
                 }
             }
 
+            // Add an extra 100ms delay since the SQL query can be quite fast when run in Azure
+            Task.Delay(100).Wait();
+
             return Ok(results);
         }
 
@@ -63,6 +66,9 @@ namespace BlockingCalls.Controllers
                     }
                 }
             }
+
+            // Add an extra 100ms delay since the SQL query can be quite fast when run in Azure
+            await Task.Delay(100);
 
             return Ok(results);
         }
