@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -48,19 +45,23 @@ namespace LOHAllocations.Controllers
             // can reduce GC pressure.
             using (var client = _httpClientFactory.CreateClient())
             {
-                using (var response = await client.GetAsync(ImageSource))
+                // Only read headers initially so that the content can be streamed
+                using (var response = await client.GetAsync(ImageSource, HttpCompletionOption.ResponseHeadersRead))
                 using (var responseStream = await response.Content.ReadAsStreamAsync())
                 {
-                    var imageBytes = ArrayPool<byte>.Shared.Rent((int)responseStream.Length);
+                    var imageBytes = ArrayPool<byte>.Shared.Rent(200*1000);
 
                     try
                     {
-                        using (var ms = new MemoryStream(imageBytes))
+                        int bytesRead, offset = 0;
+                        do
                         {
-                            await responseStream.CopyToAsync(ms);
+                            bytesRead = await responseStream.ReadAsync(imageBytes, offset, 10000);
+                            offset += bytesRead;
                         }
-
-                        return Ok(imageBytes[responseStream.Length - 1]);
+                        while (bytesRead > 0);
+                        
+                        return Ok(imageBytes[offset - 1]);
                     }
                     finally
                     {
