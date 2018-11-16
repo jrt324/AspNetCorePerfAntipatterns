@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -54,7 +55,7 @@ namespace CombinedDemo.Controllers
             var inStockProductIds = new List<int>();
             foreach (var id in productIDs)
             {
-                // Filter fo in-stock products
+                // Filter for in-stock products
                 if (ProductIsInStock(id).Result)
                 {
                     inStockProductIds.Add(id);
@@ -91,22 +92,232 @@ namespace CombinedDemo.Controllers
             return Ok(hashes);
         }
 
+        // Use ArrayPool<byte> instead of allocating large byte[]s
         [HttpGet("Test2")]
         public ActionResult<IEnumerable<string>> GetInStockThumbnailHashes2()
         {
-            throw new NotImplementedException();
+            // List of hashes to return
+            var hashes = new List<string>();
+
+            // Product IDs
+            var productIDs = new List<int>();
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                connection.Open();
+
+                // Store all returned product IDs
+                using (var command = new SqlCommand(GetMountainBikesQuery, connection))
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        productIDs.Add(reader.GetInt32(0));
+                    }
+                }
+
+                // Close the connection for now since determining which products 
+                // are in stock can take a moment and we don't want to exhaust SQL connections
+                connection.Close();
+            }
+
+            var inStockProductIds = new List<int>();
+            foreach (var id in productIDs)
+            {
+                // Filter for in-stock products
+                if (ProductIsInStock(id).Result)
+                {
+                    inStockProductIds.Add(id);
+                }
+            }
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                connection.Open();
+
+                // Iterate through in-stock products, retrieve images and store hashes
+                foreach (var id in inStockProductIds)
+                {
+                    var commandText = $"select ThumbNailPhoto from SalesLT.Product where ProductID = {id}";
+
+                    using (var command = new SqlCommand(commandText, connection))
+                    using (var reader = command.ExecuteReader())
+                    using (var md5 = MD5.Create())
+                    {
+                        while (reader.Read())
+                        {
+                            // Some product images could be large
+                            var thumbnail = ArrayPool<byte>.Shared.Rent(100 * 1000);
+                            try
+                            {
+                                var bytesRead = reader.GetBytes(0, 0, thumbnail, 0, thumbnail.Length);
+                                hashes.Add(Convert.ToBase64String(md5.ComputeHash(thumbnail, 0, (int)bytesRead)));
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(thumbnail);
+                            }
+                        }
+                    }
+                }
+
+                connection.Close();
+            }
+
+            return Ok(hashes);
         }
 
+        // Make async
         [HttpGet("Test3")]
-        public ActionResult<IEnumerable<string>> GetInStockThumbnailHashes3()
+        public async Task<ActionResult<IEnumerable<string>>> GetInStockThumbnailHashes3()
         {
-            throw new NotImplementedException();
+            // List of hashes to return
+            var hashes = new List<string>();
+
+            // Product IDs
+            var productIDs = new List<int>();
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                await connection.OpenAsync();
+
+                // Store all returned product IDs
+                using (var command = new SqlCommand(GetMountainBikesQuery, connection))
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        productIDs.Add(reader.GetInt32(0));
+                    }
+                }
+
+                // Close the connection for now since determining which products 
+                // are in stock can take a moment and we don't want to exhaust SQL connections
+                connection.Close();
+            }
+
+            var inStockProductIds = new List<int>();
+            foreach (var id in productIDs)
+            {
+                // Filter for in-stock products
+                if (await ProductIsInStock(id))
+                {
+                    inStockProductIds.Add(id);
+                }
+            }
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                await connection.OpenAsync();
+
+                // Iterate through in-stock products, retrieve images and store hashes
+                foreach (var id in inStockProductIds)
+                {
+                    var commandText = $"select ThumbNailPhoto from SalesLT.Product where ProductID = {id}";
+
+                    using (var command = new SqlCommand(commandText, connection))
+                    using (var reader = await command.ExecuteReaderAsync())
+                    using (var md5 = MD5.Create())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            // Some product images could be large
+                            var thumbnail = ArrayPool<byte>.Shared.Rent(100 * 1000);
+                            try
+                            {
+                                var bytesRead = reader.GetBytes(0, 0, thumbnail, 0, thumbnail.Length);
+                                hashes.Add(Convert.ToBase64String(md5.ComputeHash(thumbnail, 0, (int)bytesRead)));
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(thumbnail);
+                            }
+                        }
+                    }
+                }
+
+                connection.Close();
+            }
+
+            return Ok(hashes);
         }
 
+        // Consolidate SQL chatter
         [HttpGet("Test4")]
-        public ActionResult<IEnumerable<string>> GetInStockThumbnailHashes4()
+        public async Task<ActionResult<IEnumerable<string>>> GetInStockThumbnailHashes4()
         {
-            throw new NotImplementedException();
+            // List of hashes to return
+            var hashes = new List<string>();
+
+            // Product IDs
+            var productIDs = new List<int>();
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                await connection.OpenAsync();
+
+                // Store all returned product IDs
+                using (var command = new SqlCommand(GetMountainBikesQuery, connection))
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        productIDs.Add(reader.GetInt32(0));
+                    }
+                }
+
+                // Close the connection for now since determining which products 
+                // are in stock can take a moment and we don't want to exhaust SQL connections
+                connection.Close();
+            }
+
+            var inStockProductIds = new List<int>();
+            foreach (var id in productIDs)
+            {
+                // Filter for in-stock products
+                if (await ProductIsInStock(id))
+                {
+                    inStockProductIds.Add(id);
+                }
+            }
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                await connection.OpenAsync();
+
+                var commandText = $"select ThumbNailPhoto from SalesLT.Product where ProductID in ({string.Join(',', inStockProductIds)})";
+
+                // Retrieve thumbnails (and compute hashes) for in-stock products
+                using (var command = new SqlCommand(commandText, connection))
+                using (var reader = await command.ExecuteReaderAsync())
+                using (var md5 = MD5.Create())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        // Some product images could be large
+                        var thumbnail = ArrayPool<byte>.Shared.Rent(100 * 1000);
+                        try
+                        {
+                            var bytesRead = reader.GetBytes(0, 0, thumbnail, 0, thumbnail.Length);
+                            hashes.Add(Convert.ToBase64String(md5.ComputeHash(thumbnail, 0, (int)bytesRead)));
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(thumbnail);
+                        }
+                    }
+                }
+
+                connection.Close();
+            }
+
+            return Ok(hashes);
         }
 
         private async Task<bool> ProductIsInStock(int productId)
