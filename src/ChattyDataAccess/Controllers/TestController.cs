@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Security.Cryptography;
@@ -57,9 +58,16 @@ namespace ChattyDataAccess.Controllers
                     {
                         while (await reader.ReadAsync())
                         {
-                            var buffer = new byte[100 * 1000];
-                            var bytesRead = reader.GetBytes(0, 0, buffer, 0, buffer.Length);
-                            hashes.Add(Convert.ToBase64String(md5.ComputeHash(buffer, 0, (int)bytesRead)));
+                            var buffer = ArrayPool<byte>.Shared.Rent(100 * 1000);
+                            try
+                            {
+                                var bytesRead = reader.GetBytes(0, 0, buffer, 0, buffer.Length);
+                                hashes.Add(Convert.ToBase64String(md5.ComputeHash(buffer, 0, (int)bytesRead)));
+                            }
+                            finally
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
                         }
                     }
                 }
@@ -95,9 +103,16 @@ namespace ChattyDataAccess.Controllers
                 {
                     while (await reader.ReadAsync())
                     {
-                        var buffer = new byte[100 * 1000];
-                        var bytesRead = reader.GetBytes(0, 0, buffer, 0, buffer.Length);
-                        hashes.Add(Convert.ToBase64String(md5.ComputeHash(buffer, 0, (int)bytesRead)));
+                        var buffer = ArrayPool<byte>.Shared.Rent(100 * 1000);
+                        try
+                        {
+                            var bytesRead = reader.GetBytes(0, 0, buffer, 0, buffer.Length);
+                            hashes.Add(Convert.ToBase64String(md5.ComputeHash(buffer, 0, (int)bytesRead)));
+                        }
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
                     }
                 }
             }
