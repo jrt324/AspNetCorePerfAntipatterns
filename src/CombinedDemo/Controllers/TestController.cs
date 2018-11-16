@@ -28,10 +28,11 @@ namespace CombinedDemo.Controllers
             // List of hashes to return
             var hashes = new List<string>();
 
+            // Product IDs
+            var productIDs = new List<int>();
+
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
-                var productIDs = new List<int>();
-
                 // Open the SQL connection
                 connection.Open();
 
@@ -45,15 +46,29 @@ namespace CombinedDemo.Controllers
                     }
                 }
 
-                // Iterate through in-stock products, retrieve images and store hashes
-                foreach (var id in productIDs)
-                {
-                    // Only get images for in-stock products
-                    if (!ProductIsInStock(id).Result)
-                    {
-                        continue;
-                    }
+                // Close the connection for now since determining which products 
+                // are in stock can take a moment and we don't want to exhaust SQL connections
+                connection.Close();
+            }
 
+            var inStockProductIds = new List<int>();
+            foreach (var id in productIDs)
+            {
+                // Filter fo in-stock products
+                if (ProductIsInStock(id).Result)
+                {
+                    inStockProductIds.Add(id);
+                }
+            }
+
+            using (var connection = new SqlConnection(_configuration["ConnectionString"]))
+            {
+                // Open the SQL connection
+                connection.Open();
+
+                // Iterate through in-stock products, retrieve images and store hashes
+                foreach (var id in inStockProductIds)
+                {
                     var commandText = $"select ThumbNailPhoto from SalesLT.Product where ProductID = {id}";
 
                     using (var command = new SqlCommand(commandText, connection))
@@ -69,6 +84,8 @@ namespace CombinedDemo.Controllers
                         }
                     }
                 }
+
+                connection.Close();
             }
 
             return Ok(hashes);
@@ -95,7 +112,7 @@ namespace CombinedDemo.Controllers
         private async Task<bool> ProductIsInStock(int productId)
         {
             // This method mimcs a call to another service to check stock
-            await Task.Delay(50);
+            await Task.Delay(10);
 
             // For test purposes, just say product IDs in the 700s or 900s are in stock and others aren't
             var productSeries = productId / 100;
