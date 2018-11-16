@@ -8,7 +8,7 @@ namespace BlockingCalls.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DataController : ControllerBase
+    public class TestController : ControllerBase
     {
         const string Query = @"select product.Name,category.Name from SalesLT.Product as product 
                                join SalesLT.ProductCategory as category 
@@ -16,7 +16,7 @@ namespace BlockingCalls.Controllers
 
         private readonly IConfiguration _configuration;
 
-        public DataController(IConfiguration configuration)
+        public TestController(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new System.ArgumentNullException(nameof(configuration));
         }
