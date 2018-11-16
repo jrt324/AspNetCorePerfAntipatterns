@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChattyDataAccess", "ChattyDataAccess\ChattyDataAccess.csproj", "{F267BDF0-B38C-4BAC-8029-7A6994047DFF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CombinedDemo", "CombinedDemo\CombinedDemo.csproj", "{80D9E0D5-7D5F-4489-A928-13F38A619B1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +40,10 @@ Global
 		{F267BDF0-B38C-4BAC-8029-7A6994047DFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F267BDF0-B38C-4BAC-8029-7A6994047DFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F267BDF0-B38C-4BAC-8029-7A6994047DFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80D9E0D5-7D5F-4489-A928-13F38A619B1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80D9E0D5-7D5F-4489-A928-13F38A619B1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80D9E0D5-7D5F-4489-A928-13F38A619B1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80D9E0D5-7D5F-4489-A928-13F38A619B1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

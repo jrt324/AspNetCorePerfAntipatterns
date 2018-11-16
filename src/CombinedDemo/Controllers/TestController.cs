@@ -28,7 +28,6 @@ namespace CombinedDemo.Controllers
             // List of hashes to return
             var hashes = new List<string>();
 
-            using (var md5 = MD5.Create())
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
                 var productIDs = new List<int>();
@@ -36,27 +35,30 @@ namespace CombinedDemo.Controllers
                 // Open the SQL connection
                 connection.Open();
 
-                // Iterate through all product IDs and find those that are in stock
+                // Store all returned product IDs
                 using (var command = new SqlCommand(GetMountainBikesQuery, connection))
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        var id = reader.GetInt32(0);
-                        if (ProductIsInStock(id).Result)
-                        {
-                            productIDs.Add(id);
-                        }
+                        productIDs.Add(reader.GetInt32(0));
                     }
                 }
 
                 // Iterate through in-stock products, retrieve images and store hashes
                 foreach (var id in productIDs)
                 {
+                    // Only get images for in-stock products
+                    if (!ProductIsInStock(id).Result)
+                    {
+                        continue;
+                    }
+
                     var commandText = $"select ThumbNailPhoto from SalesLT.Product where ProductID = {id}";
 
                     using (var command = new SqlCommand(commandText, connection))
                     using (var reader = command.ExecuteReader())
+                    using (var md5 = MD5.Create())
                     {
                         while (reader.Read())
                         {
