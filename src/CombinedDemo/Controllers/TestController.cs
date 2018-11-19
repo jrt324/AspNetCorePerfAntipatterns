@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -279,7 +280,6 @@ namespace CombinedDemo.Controllers
             var inStockProductIds = new List<int>();
             foreach (var id in productIDs)
             {
-                // Filter for in-stock products
                 if (await ProductIsInStock(id))
                 {
                     inStockProductIds.Add(id);
@@ -323,7 +323,7 @@ namespace CombinedDemo.Controllers
         private async Task<bool> ProductIsInStock(int productId)
         {
             // This method mimcs a call to another service to check stock
-            await Task.Delay(10);
+            await Task.Delay(20);
 
             // For test purposes, just say product IDs in the 700s or 900s are in stock and others aren't
             var productSeries = productId / 100;
