@@ -277,14 +277,14 @@ namespace CombinedDemo.Controllers
                 connection.Close();
             }
 
-            var inStockProductIds = new List<int>();
-            foreach (var id in productIDs)
+            var inStockProductIds = new ConcurrentBag<int>();
+            await Task.WhenAll(productIDs.Select(async id =>
             {
                 if (await ProductIsInStock(id))
                 {
                     inStockProductIds.Add(id);
                 }
-            }
+            }));
 
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
