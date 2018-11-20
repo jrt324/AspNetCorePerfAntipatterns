@@ -298,10 +298,10 @@ namespace CombinedDemo.Controllers
                 using (var reader = await command.ExecuteReaderAsync())
                 using (var md5 = MD5.Create())
                 {
+                    // Some product images could be large
+                    var thumbnail = ArrayPool<byte>.Shared.Rent(100 * 1000);
                     while (await reader.ReadAsync())
                     {
-                        // Some product images could be large
-                        var thumbnail = ArrayPool<byte>.Shared.Rent(100 * 1000);
                         try
                         {
                             var bytesRead = reader.GetBytes(0, 0, thumbnail, 0, thumbnail.Length);
