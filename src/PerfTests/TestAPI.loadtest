@@ -3,7 +3,7 @@
   <Scenarios>
     <Scenario Name="BlockingCallsStress" DelayBetweenIterations="0" PercentNewUsers="0" IPSwitching="false" TestMixType="PercentageOfTestsStarted" ApplyDistributionToPacingDelay="true" MaxTestIterations="0" DisableDuringWarmup="false" DelayStartTime="0" AllowedAgents="">
       <ThinkProfile Value="0.2" Pattern="NormalDistribution" />
-      <LoadProfile Pattern="Step" InitialUsers="10" MaxUsers="500" StepUsers="25" StepDuration="15" StepRampTime="0" />
+      <LoadProfile Pattern="Step" InitialUsers="5" MaxUsers="200" StepUsers="10" StepDuration="20" StepRampTime="0" />
       <TestMix>
         <TestProfile Name="TestAPI" Path="testapi.webtest" Id="49327b7f-8bea-4593-8e57-9b07cde0886b" Percentage="100" Type="Microsoft.VisualStudio.TestTools.WebStress.DeclarativeWebTestElement, Microsoft.VisualStudio.QualityTools.LoadTest, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
       </TestMix>
