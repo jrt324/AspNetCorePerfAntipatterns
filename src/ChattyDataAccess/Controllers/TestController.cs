@@ -9,16 +9,22 @@ using Microsoft.Extensions.Configuration;
 
 namespace ChattyDataAccess.Controllers
 {
+    // This test API calculates MD5 hashes for images associated with particular products in the database
     [Route("api/[controller]")]
     [ApiController]
     public class TestController : ControllerBase
     {
-        const string GetProductsQuery = @"select product.ProductID from SalesLT.Product as product 
-                               join SalesLT.ProductCategory as category 
-	                             on product.ProductCategoryID = category.ProductCategoryID
-                               where category.Name = 'Mountain Bikes'";
+        static readonly int[] ProductIds = new int[] {
+            771, 772, 773, 774, 775, 776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 
+            980, 981, 982, 983, 984, 985, 986, 987, 988, 989, 990, 991, 992, 993};
+        
+        // The slow API will query each product thumbnail individually
+        // It is also slower because it retrieves columns that aren't used. Querying for '*'
+        // and similar patterns can lead to reduced throughput.
+        const string GetThumbnailSlow = @"select ThumbNailPhoto, ThumbNailPhotoFileName, Name
+                                          from SalesLT.Product where ProductID = {0}";
 
-        const string GetThumbnailSlow = @"select ThumbNailPhoto from SalesLT.Product where ProductID = {0}";
+        // The fast API will query all product thumbnails at once (and only retrieve a single column of data)
         const string GetThumbnailFast = @"select ThumbNailPhoto from SalesLT.Product where ProductID in ({0})";
 
         private readonly IConfiguration _configuration;
@@ -37,23 +43,17 @@ namespace ChattyDataAccess.Controllers
             using (var md5 = MD5.Create())
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
-                var productIDs = new List<int>();
                 await connection.OpenAsync();
 
-                using (var command = new SqlCommand(GetProductsQuery, connection))
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        productIDs.Add(reader.GetInt32(0));
-                    }
-                }
-
-                foreach (var id in productIDs)
+                foreach (var id in ProductIds)
                 {
                     var commandText = string.Format(GetThumbnailSlow, id);
                 
                     using (var command = new SqlCommand(commandText, connection))
+
+                    // Executing a SQL command inside of a loop is a red flag
+                    // It's important to minimize trips to the database. Most APIs
+                    // shouldn't need more than one or maybe two queries.
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (await reader.ReadAsync())
@@ -85,20 +85,12 @@ namespace ChattyDataAccess.Controllers
             using (var md5 = MD5.Create())
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
-                var productIDs = new List<int>();
-                await connection.OpenAsync();
+                var commandText = string.Format(GetThumbnailFast, string.Join(',', ProductIds));
 
-                using (var command = new SqlCommand(GetProductsQuery, connection))
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        productIDs.Add(reader.GetInt32(0));
-                    }
-                }
-
-                var commandText = string.Format(GetThumbnailFast, string.Join(',', productIDs));
                 using (var command = new SqlCommand(commandText, connection))
+
+                // This API is much faster because it retrieves all needed data from the database
+                // with a single query.
                 using (var reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())

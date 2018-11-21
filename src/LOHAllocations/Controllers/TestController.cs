@@ -6,12 +6,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LOHAllocations.Controllers
 {
+    // This test API returns the last byte of a large image
     [Route("api/[controller]")]
     [ApiController]
     public class TestController : ControllerBase
     {
         // ~93KB image
         const string ImageSource = "https://blogs.microsoft.com/uploads/2012/08/8867.Microsoft_5F00_Logo_2D00_for_2D00_screen.jpg";
+        
+        // Use IHttpClientFactory so that HTTP connections are properly pooled
         private readonly IHttpClientFactory _httpClientFactory;
 
         public TestController(IHttpClientFactory httpClientFactory)
@@ -21,13 +24,16 @@ namespace LOHAllocations.Controllers
 
         // GET api/image/slow
         [HttpGet("slow")]
-        public async Task<ActionResult<int>> GetImageSlowAsync()
+        public async Task<ActionResult<byte>> GetImageSlowAsync()
         {
             using (var client = _httpClientFactory.CreateClient())
             {
+                // By default, HttpClient.GetAsync will load the response body.
+                // Normally this is ok, but in hot code paths where a large response
+                // is expected, it's better to only read headers initially
+                // (using `HttpCompletionOption.ResponseHeadersRead`).
                 var response = await client.GetAsync(ImageSource);
 
-                // !!! BUG !!!
                 // Allocating large byte[] and string objects on a hot code path
                 // will lead to frequent gen 2 GCs and poor performance. These objects
                 // should be pooled or cached.
@@ -38,10 +44,10 @@ namespace LOHAllocations.Controllers
 
         // GET api/image/slow
         [HttpGet("fast")]
-        public async Task<ActionResult<int>> GetImageFastAsync()
+        public async Task<ActionResult<byte>> GetImageFastAsync()
         {
             // Ideally the large object would be cached to avoid both the GC pressure 
-            // and the http call. Assuming that isn't an option, though, ArrayPools
+            // and the HTTP call. Assuming that isn't an option, though, ArrayPools
             // can reduce GC pressure.
             using (var client = _httpClientFactory.CreateClient())
             {
@@ -49,6 +55,7 @@ namespace LOHAllocations.Controllers
                 using (var response = await client.GetAsync(ImageSource, HttpCompletionOption.ResponseHeadersRead))
                 using (var responseStream = await response.Content.ReadAsStreamAsync())
                 {
+                    // Here a byte[] is rented from the ArrayPool instead of being allocated new
                     var imageBytes = ArrayPool<byte>.Shared.Rent(200*1000);
 
                     try
@@ -65,6 +72,7 @@ namespace LOHAllocations.Controllers
                     }
                     finally
                     {
+                        // Arrays from ArrayPools must be returned once they're no longer needed
                         ArrayPool<byte>.Shared.Return(imageBytes);
                     }
                 }

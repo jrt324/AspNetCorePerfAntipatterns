@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlockingCalls.Controllers
 {
+    // This test API returns the name and category name for all products in the database
     [Route("api/[controller]")]
     [ApiController]
     public class TestController : ControllerBase
@@ -29,10 +30,12 @@ namespace BlockingCalls.Controllers
 
             using (var connection = new SqlConnection(_configuration["ConnectionString"]))
             {
+                // This could be (and should be) async
                 connection.Open();
 
                 using (var command = new SqlCommand(Query, connection))
                 {
+                    // Both ExecuteReader and Read should be async
                     var reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -42,6 +45,8 @@ namespace BlockingCalls.Controllers
             }
 
             // Add an extra 100ms delay since the SQL query can be quite fast when run in Azure
+            // Using Task.Wait should be a red flag since it's turning an asynchronous task into
+            // a synchronous one!
             Task.Delay(100).Wait();
 
             return Ok(results);
