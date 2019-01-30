@@ -3,6 +3,7 @@
 ### **Vedio**
 
 (https://www.youtube.com/watch?v=_5T4sZHbfoQ)
+https://channel9.msdn.com/Shows/On-NET/Diagnosing-ASPNET-Core-performance-issues?WT.mc_id=DX_MVP4025064
 
 ### **The projects in this repository are intentionally buggy and do not represent best practices**
 
